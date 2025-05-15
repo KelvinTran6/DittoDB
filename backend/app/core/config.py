@@ -12,14 +12,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
+# Database settings
+DATABASE_URL = f"sqlite:///{DATA_DIR}/dittodb.sqlite"
+
 # CORS settings
 CORS_ORIGINS = ["http://localhost:5173"]  # Frontend URL
 
-# JWT settings
-SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-# Supabase settings
+# Supabase settings for database operations
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY") 

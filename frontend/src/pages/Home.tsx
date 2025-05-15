@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { FileUpload } from '../components/FileUpload';
 import type { Dataset } from '../types';
 import { uploadFile } from '../services/api';
+import { supabase } from '../lib/supabase';
 
 export const Home = () => {
   const [loading, setLoading] = useState(false);
@@ -14,6 +15,14 @@ export const Home = () => {
   const handleError = (error: string) => {
     console.error('Upload error:', error);
   };
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const {data: {user}} = await supabase.auth.getUser();
+      console.log(user);
+    }
+    loadUser();
+  }, []);
 
   return (
     <div className="min-h-screen w-screen bg-background-dark flex flex-col">
