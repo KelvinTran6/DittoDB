@@ -23,10 +23,16 @@ export const FileUpload = ({ onUpload, onError }: FileUploadProps) => {
         const response = await fetch('http://localhost:8000/data/upload', {
           method: 'POST',
           body: formData,
+          mode: 'cors',
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
         });
 
         if (!response.ok) {
-          throw new Error('Upload failed');
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.detail || 'Upload failed');
         }
 
         const data = await response.json();

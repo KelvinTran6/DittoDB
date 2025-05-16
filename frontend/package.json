@@ -13,6 +13,7 @@
     "@monaco-editor/react": "^4.6.0",
     "@react-oauth/google": "^0.12.2",
     "@supabase/supabase-js": "^2.39.0",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

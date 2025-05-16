@@ -1,7 +1,7 @@
-import polars as pl
 import duckdb
 from pathlib import Path
 from datetime import datetime
+import numpy as np
 from ..core.config import DATA_DIR
 
 class DataService:
@@ -13,9 +13,6 @@ class DataService:
             buffer.write(file_content)
         
         try:
-            # Read CSV with Polars
-            df = pl.read_csv(str(temp_file_path))
-            
             # Generate unique dataset ID
             dataset_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
             
@@ -27,24 +24,27 @@ class DataService:
             dataset_dir = user_dir / f"dataset_{dataset_id}"
             dataset_dir.mkdir(exist_ok=True)
             
-            # Save to DuckDB locally in the dataset's directory
+            # Create DuckDB connection and load CSV directly
             db_path = dataset_dir / "data.db"
             conn = duckdb.connect(str(db_path))
             
-            # Convert to Pandas DataFrame and save
-            pandas_df = df.to_pandas()
-            conn.execute("CREATE TABLE data AS SELECT * FROM pandas_df")
-            conn.close()
+            # Create table from CSV
+            conn.execute(f"CREATE TABLE data AS SELECT * FROM read_csv_auto('{temp_file_path}')")
             
             # Get schema information
+            schema_info = conn.execute("DESCRIBE data").fetchdf()
             schema = {
-                "columns": df.columns,
-                "dtypes": {col: str(df.schema[col]) for col in df.columns},
-                "row_count": len(df)
+                "columns": schema_info['column_name'].tolist(),
+                "dtypes": dict(zip(schema_info['column_name'], schema_info['column_type'])),
+                "row_count": conn.execute("SELECT COUNT(*) FROM data").fetchone()[0]
             }
             
-            # Get preview data (first 5 rows)
-            preview_data = df.head(5).to_dicts()
+            # Get all data and handle nan values
+            df = conn.execute("SELECT * FROM data").fetchdf()
+            df = df.replace({np.nan: None})  # Convert nan to None (which becomes null in JSON)
+            preview_data = df.to_dict(orient='records')
+            
+            conn.close()
             
             return {
                 "dataset_id": dataset_id,
@@ -68,6 +68,7 @@ class DataService:
         
         conn = duckdb.connect(str(db_path))
         result = conn.execute(query).fetchdf()
+        result = result.replace({np.nan: None})  # Convert nan to None
         conn.close()
         
         return {

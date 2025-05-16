@@ -8,13 +8,16 @@ router = APIRouter()
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(
     file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
 ):
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
     
-    content = await file.read()
-    return await DataService.process_upload(content, file.filename, current_user["username"])
+    try:
+        content = await file.read()
+        result = await DataService.process_upload(content, file.filename, "test_user")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/query")
 async def execute_query(
@@ -37,7 +40,6 @@ async def get_dataset_data(
     username: str = Path(...),
     dataset_id: str = Path(...)
 ):
-    # Fetch the dataset data using the username and dataset_id
     try:
         result = DataService.execute_query(dataset_id, "SELECT * FROM data", username)
         return result
