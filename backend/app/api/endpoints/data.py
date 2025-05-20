@@ -1,7 +1,9 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Path
+from fastapi import APIRouter, UploadFile, File, HTTPException, Path
 from ...services.data_service import DataService
 from ...schemas.data import QueryRequest, UploadResponse
-from ...core.dependencies import get_current_user
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -14,7 +16,7 @@ async def upload_file(
     
     try:
         content = await file.read()
-        result = await DataService.process_upload(content, file.filename, "test_user")
+        result = await DataService.process_upload(content, file.filename)
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -22,26 +24,24 @@ async def upload_file(
 @router.post("/query")
 async def execute_query(
     request: QueryRequest,
-    current_user: dict = Depends(get_current_user)
 ):
-    return DataService.execute_query(request.dataset_id, request.query, current_user["username"])
+    return DataService.execute_query(request.dataset_id, request.query)
 
 @router.post("/generate_api_url")
 async def generate_api_url(
     dataset_id: str,
-    current_user: dict = Depends(get_current_user)
 ):
     # Generate a unique API URL for the dataset
-    api_url = f"/api/data/{current_user['username']}/{dataset_id}"
+    api_url = f"/data/{dataset_id}"  # Remove /api prefix since it's already in the router
     return {"api_url": api_url}
 
-@router.get("/api/data/{username}/{dataset_id}")
+@router.get("/{dataset_id}")  # Simplified route path
 async def get_dataset_data(
-    username: str = Path(...),
     dataset_id: str = Path(...)
 ):
+    logger.debug(f"Received request for dataset_id: {dataset_id}")
     try:
-        result = DataService.execute_query(dataset_id, "SELECT * FROM data", username)
+        result = DataService.execute_query(dataset_id, "SELECT * FROM data")
         return result
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Dataset not found") 

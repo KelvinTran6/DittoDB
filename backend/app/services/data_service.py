@@ -3,10 +3,14 @@ from pathlib import Path
 from datetime import datetime
 import numpy as np
 from ..core.config import DATA_DIR
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class DataService:
     @staticmethod
-    async def process_upload(file_content: bytes, filename: str, user_id: str) -> dict:
+    async def process_upload(file_content: bytes, filename: str) -> dict:
         # Save the uploaded file temporarily
         temp_file_path = DATA_DIR / f"temp_{filename}"
         with open(temp_file_path, "wb") as buffer:
@@ -15,17 +19,16 @@ class DataService:
         try:
             # Generate unique dataset ID
             dataset_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}"
+            logger.debug(f"Generated dataset_id: {dataset_id}")
             
-            # Create a user-specific directory
-            user_dir = DATA_DIR / f"user_{user_id}"
-            user_dir.mkdir(exist_ok=True)
-            
-            # Create a dataset-specific directory under the user's directory
-            dataset_dir = user_dir / f"dataset_{dataset_id}"
+            # Create a dataset-specific directory
+            dataset_dir = DATA_DIR / f"dataset_{dataset_id}"
             dataset_dir.mkdir(exist_ok=True)
+            logger.debug(f"Created dataset directory: {dataset_dir}")
             
             # Create DuckDB connection and load CSV directly
             db_path = dataset_dir / "data.db"
+            logger.debug(f"Database path: {db_path}")
             conn = duckdb.connect(str(db_path))
             
             # Create table from CSV
@@ -59,10 +62,14 @@ class DataService:
                 temp_file_path.unlink()
     
     @staticmethod
-    def execute_query(dataset_id: str, query: str, user_id: str) -> dict:
-        user_dir = DATA_DIR / f"user_{user_id}"
-        dataset_dir = user_dir / f"dataset_{dataset_id}"
+    def execute_query(dataset_id: str, query: str) -> dict:
+        dataset_dir = DATA_DIR / f"dataset_{dataset_id}"
         db_path = dataset_dir / "data.db"
+        logger.debug(f"Looking for database at: {db_path}")
+        logger.debug(f"DATA_DIR: {DATA_DIR}")
+        logger.debug(f"Directory exists: {dataset_dir.exists()}")
+        logger.debug(f"Database exists: {db_path.exists()}")
+        
         if not db_path.exists():
             raise FileNotFoundError("Dataset not found")
         
