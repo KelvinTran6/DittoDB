@@ -1,9 +1,9 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import { Dashboard } from './pages/Dashboard';
 import Landing from './pages/Landing';
 import SignIn from './pages/SignIn';
-import {Home} from './pages/Home';
 
 function App() {
   return (
@@ -14,7 +14,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/signin" element={<SignIn />} />
-            <Route path="/home" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </Router>

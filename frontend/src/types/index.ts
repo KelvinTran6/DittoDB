@@ -1,13 +1,14 @@
 export interface Dataset {
-  id: string;
-  name: string;
+  dataset_id: string;
   schema: Schema;
-  created_at: string;
+  data: Record<string, any>[];
+  message: string;
 }
 
 export interface Schema {
   columns: string[];
   dtypes: Record<string, string>;
+  row_count: number;
 }
 
 export interface QueryResult {

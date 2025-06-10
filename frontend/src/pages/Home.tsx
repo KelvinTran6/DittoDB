@@ -2,18 +2,40 @@ import { useEffect, useState } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import { FileUpload } from '../components/FileUpload';
 import { TableView } from '../components/TableView';
-import { Footer } from '../components/Footer';
 import type { Dataset } from '../types';
-import { uploadFile } from '../services/api';
 import { supabase } from '../lib/supabase';
 
-export const Home = () => {
+interface HomeProps {
+  tableId: string;
+}
+
+export const Home = ({ tableId }: HomeProps) => {
   const [loading, setLoading] = useState(false);
   const [dataset, setDataset] = useState<Dataset | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const loadDataset = async () => {
+      try {
+        // Load dataset from localStorage using tableId
+        const savedDataset = localStorage.getItem(`table-${tableId}`);
+        if (savedDataset) {
+          setDataset(JSON.parse(savedDataset));
+        }
+      } catch (error) {
+        console.error('Error loading dataset:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDataset();
+  }, [tableId]);
+
   const handleUpload = async (dataset: Dataset) => {
+    // Save dataset to localStorage without modifying the dataset_id
+    localStorage.setItem(`table-${tableId}`, JSON.stringify(dataset));
     setDataset(dataset);
     toast.success('File uploaded successfully!');
   };
@@ -43,6 +65,8 @@ export const Home = () => {
       }
 
       const data = await response.json();
+      // Save dataset to localStorage without modifying the dataset_id
+      localStorage.setItem(`table-${tableId}`, JSON.stringify(data));
       setDataset(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to upload file');
@@ -58,38 +82,35 @@ export const Home = () => {
     loadUser();
   }, []);
 
-  return (
-    <div className="min-h-screen w-screen bg-[#F5F5F5] flex flex-col relative">
-      {/* Dotted background pattern */}
-      <div 
-        className="absolute inset-0 bg-[#F5F5F5]"
-        style={{
-          backgroundImage: `radial-gradient(#E5E7EB 1px, transparent 1px)`,
-          backgroundSize: '20px 20px'
-        }}
-      />
-      
-      <Toaster position="top-right" />
-      <main className="flex-1 flex items-center justify-center w-full relative z-10">
-        <div className="w-full max-w-4xl px-4">
-          {!dataset ? (
-            <>
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-semibold text-[#0D0D0D] mb-2">Upload Your CSV File</h2>
-                <p className="text-gray-600">Get started by uploading your CSV file</p>
-              </div>
-              <div className="w-full max-w-xl mx-auto">
-                <FileUpload onUpload={handleUpload} onError={handleError} />
-              </div>
-            </>
-          ) : (
-            <div className="mt-8 h-[calc(100vh-200px)] relative">
-              <TableView dataset={dataset} />
-            </div>
-          )}
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-      </main>
-      {dataset && <Footer datasetId={dataset.dataset_id} />}
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full w-full">
+      <Toaster position="top-right" />
+      {!dataset ? (
+        <div className="h-full flex items-center justify-center">
+          <div className="w-full max-w-xl">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-[#0D0D0D] mb-2">Upload Your CSV File</h2>
+              <p className="text-gray-600">Get started by uploading your CSV file</p>
+            </div>
+            <FileUpload onUpload={handleUpload} onError={handleError} />
+          </div>
+        </div>
+      ) : (
+        <div className="h-full">
+          <TableView dataset={dataset} />
+        </div>
+      )}
     </div>
   );
 }; 
